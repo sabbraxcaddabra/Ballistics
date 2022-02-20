@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from collections import namedtuple
 import numpy as np
-from calculations import internal_ballistics as ib
-from calculations import external_ballistics as eb
+from calculations.optimize import external_ballistics as eb, internal_ballistics as ib
 
 __all__ = ["ArtSystem", "Powder", "LoadParams",
            "ShootingParameters", "Shell", "BallisticsProblem"]
