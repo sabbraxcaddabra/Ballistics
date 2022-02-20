@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from collections import namedtuple
 import numpy as np
 from calculations.optimize import external_ballistics as eb, internal_ballistics as ib
+from calculations.analyze import internal_ballistics as iba
 
 __all__ = ["ArtSystem", "Powder", "LoadParams",
            "ShootingParameters", "Shell", "BallisticsProblem"]
@@ -200,5 +201,7 @@ if __name__ == '__main__':
         artsys, powders, shell,
         shot_params=ShootingParameters(5., 1000.)
     )
-    print(bal_prob.solve_ib())
-    print(bal_prob.solve_eb())
+    # print(bal_prob.solve_ib())
+    # print(bal_prob.solve_eb())
+    sol = iba.count_ib(*bal_prob._ib_preprocessor())[0]
+    np.savetxt('res.txt', sol.T)
