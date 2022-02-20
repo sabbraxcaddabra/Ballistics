@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from numba import njit
 from ErrorClasses import TooMuchTime
@@ -58,6 +57,7 @@ def external_bal_rs(dy, y, q, d, i43):
     dy[3] = -(g * np.cos(y[3])) / y[2]  # Расчет приращения угла teta
 
 
+@njit
 def count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
     '''
     Решение основной задачи внешней баллистики
@@ -71,78 +71,33 @@ def count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
     :param tmax: Максимальное время полета
     :return:
     '''
-    xlist = [0.]
-    ylist = [0.]
-    Vlist = [V0]
-    Thetalist = [theta]
-    y0 = np.array([0., 0., V0, theta])
-    t0 = 0.
+    ts = np.arange(0., tmax+tstep, tstep)
+    ys = np.zeros((len(ts), 4))
+    ys[0] = np.array([0., 0., V0, theta])
     K = np.zeros((4, 4))
-    while y0[1] >= 0. and y0[0] < distance:
-        external_bal_rs(K[0], y0, q, d, i43)
-        external_bal_rs(K[1], y0+K[0]*tstep/2, q, d, i43)
-        external_bal_rs(K[2], y0+K[1]*tstep/2, q, d, i43)
-        external_bal_rs(K[3], y0+K[2]*tstep, q, d, i43)
-        y0 += tstep*(K[0] + 2*K[1] + 2*K[2] + K[3])/6
-        t0 += tstep
 
-        xlist.append(y0[0])
-        ylist.append(y0[1])
-        Vlist.append(y0[2])
-        Thetalist.append(y0[3])
+    for i in range(1, len(ts)):
+        external_bal_rs(K[0], ys[i-1], q, d, i43)
+        external_bal_rs(K[1], ys[i-1] + K[0] * tstep / 2, q, d, i43)
+        external_bal_rs(K[2], ys[i-1] + K[1] * tstep / 2, q, d, i43)
+        external_bal_rs(K[3], ys[i-1] + K[2] * tstep, q, d, i43)
+        ys[i] = ys[i-1] + tstep * (K[0] + 2 * K[1] + 2 * K[2] + K[3]) / 6
 
+        if ys[i, 1] <= 0. or ys[i, 0] > distance:
+            break
 
-        if t0 > tmax:
-            raise TooMuchTime()
+    ts = ts[:i+1]
+    ys = ys[:i+1]
 
-    y0[3] = np.rad2deg(y0[3])
+    if ys[-1, 1] < 0:
+        ts[-1] = ts[-1] + (0. - ys[-2, 1]) * ((ts[-1]-ts[-2])/(ys[-1, 1]-ys[-2, 1]))
+        ys[-1] = ys[-2] + (0. - ys[-2, 1]) * ((ys[-1]-ys[-2])/(ys[-1, 1]-ys[-2, 1]))
 
-    # Интерполируем
-    size = len(ylist) - 1
-    # Только если Y отрицательный
-    if ylist[size] < 0:
-        # Для x и y
-        x2 = ylist[size]
-        fx2 = xlist[size]
-        x1 = ylist[size-1]
-        fx1 = xlist[size-1]
-        x = 0
-        fx = fx1 + (x-x1)*((fx2-fx1)/(x2-x1))
-        # Для Скорости
-        fx2 = Vlist[size]
-        fx1 = Vlist[size-1]
-        fV =  fx1 + (x-x1)*((fx2-fx1)/(x2-x1))
-        # Для Угла
-        fx2 = Thetalist[size]
-        fx1 = Thetalist[size-1]
-        fTheta=  fx1 + (x-x1)*((fx2-fx1)/(x2-x1))
+    ys[:, 3] = np.rad2deg(ys[:, 3])
 
-        # Подмена на новое значение
-        ylist.pop()
-        xlist.pop()
-        Vlist.pop()
-        Thetalist.pop()
+    return ts, ys.T
 
-        ylist.append(x)
-        xlist.append(fx)
-        Vlist.append(fV)
-        Thetalist.append(fTheta)
-
-    param = [xlist, ylist, Vlist, Thetalist]
-
-
-    return param
-if __name__ == '__main__':
-
-    Values = count_eb(550, 21.76, 0.12192, 1., np.deg2rad(45), 1e5)
-
-    # График
-    plt.title("Траектория полёта снаряда")
-    plt.xlabel("Дальность, м")
-    plt.ylabel("Высота, м")
-    plt.grid()
-    plt.plot(Values[0], Values[1])
-    plt.show()
+count_eb(550, 21.76, 0.12192, 1., np.deg2rad(5), 1e3)
 
 
 
