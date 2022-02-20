@@ -177,7 +177,11 @@ class BallisticsProblem:
         :param tmax:
         :return:
         '''
-        return iba.count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
+        ys, p_mean, p_sn, p_kn, lk_indexes = iba.count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
+        self.v0 = ys[0].max()
+        self.pmax = p_mean.max()
+
+        return ys, p_mean, p_sn, p_kn, lk_indexes
 
     def fsolve_ib(self, tstep=1e-5, tmax=1.):
         '''
@@ -232,4 +236,5 @@ if __name__ == '__main__':
         shot_params=ShootingParameters(5., 1000.)
     )
 
+    bal_prob.dsolve_ib()
     bal_prob.dsolve_eb()
