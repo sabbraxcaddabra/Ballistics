@@ -1,11 +1,13 @@
 from dataclasses import dataclass
+from abc import ABC, abstractmethod
 from collections import namedtuple
 import numpy as np
-from calculations.optimize import external_ballistics as eb, internal_ballistics as ib
-from calculations.analyze import internal_ballistics as iba, external_ballistics as eba
+import calculations.optimize as co
+import calculations.analyze as ca
 
 __all__ = ["ArtSystem", "Powder", "LoadParams",
-           "ShootingParameters", "Shell", "BallisticsProblem"]
+           "ShootingParameters", "Shell",
+           "FastBallisticsSolver", "DenseBallisticsSolver"]
 
 
 @dataclass
@@ -85,11 +87,12 @@ class ShootingParameters:
     distance: float = 150e3  # Макс. дистанция стрельбы
 
 
-class BallisticsProblem:
+class BallisticsProblem(ABC):
     v0 = 0.
     pmax = 1e5
     psi_sum = 0.
     eta_k = 0.
+    Lmax = 0.
 
     igniter_f = 240e3
     igniter_teta = 0.22
@@ -170,28 +173,26 @@ class BallisticsProblem:
         params.append(tuple(powders))
         return tuple(params)
 
-    def dsolve_ib(self, tstep=1e-5, tmax=1.):
-        '''
-        Решение внутренней баллистики в режиме анализа(d - от dense output)
-        :param tstep:
-        :param tmax:
-        :return:
-        '''
-        ys, p_mean, p_sn, p_kn, lk_indexes = iba.count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
-        self.v0 = ys[0].max()
-        self.pmax = p_mean.max()
+    def _eb_preprocessor(self):
+        return (self.v0, self.shell.q, self.shell.d, self.shell.i43,
+                np.deg2rad(self.shot_params.theta_angle), self.shot_params.distance)
 
-        return ys, p_mean, p_sn, p_kn, lk_indexes
+    @abstractmethod
+    def solve_ib(self, tstep=1e-5, tmax=1.):
+        pass
 
-    def fsolve_ib(self, tstep=1e-5, tmax=1.):
-        '''
-        Решение внутренней баллистики в режиме синтеза(f - от fast)
-        :param tstep:
-        :param tmax:
-        :return:
-        '''
+    @abstractmethod
+    def solve_eb(self, tstep=1., tmax=1000.):
+        pass
 
-        v0, p_mean_max, _, _, psi_sum, eta_k = ib.count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
+class FastBallisticsSolver(BallisticsProblem):
+
+    '''
+    Быстрый решатель (режим синтеза)
+    '''
+
+    def solve_ib(self, tstep=1e-5, tmax=1.):
+        v0, p_mean_max, _, _, psi_sum, eta_k = co.count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
 
         self.v0 = v0
         self.pmax = p_mean_max
@@ -200,26 +201,43 @@ class BallisticsProblem:
 
         return v0, p_mean_max, psi_sum, eta_k
 
-    def _eb_preprocessor(self):
-        return (self.v0, self.shell.q, self.shell.d, self.shell.i43,
-                np.deg2rad(self.shot_params.theta_angle), self.shot_params.distance)
-
-    def dsolve_eb(self, tstep=1., tmax=1000.):
-        return eba.count_eb(*self._eb_preprocessor(), tstep=tstep, tmax=tmax)
-
-    def fsolve_eb(self, tstep=1., tmax=1000.):
+    def solve_eb(self, tstep=1., tmax=1000.):
         '''
         Решение внешней баллистики в режиме синтеза(f - от fast)
         :param tstep:
         :param tmax:
         :return:
         '''
-        x_max, y_end, v_end, theta_end = eb.count_eb(*self._eb_preprocessor(), tstep, tmax)
+        x_max, y_end, v_end, theta_end = co.count_eb(*self._eb_preprocessor(), tstep, tmax)
         self.Lmax = x_max
         self.y_end = y_end
         self.v_end = v_end
         self.theta_end = theta_end
         return x_max, y_end, v_end, theta_end
+
+class DenseBallisticsSolver(BallisticsProblem):
+
+    '''
+    Решатель с dense-output(режим анализа)
+    '''
+
+    def solve_ib(self, tstep=1e-5, tmax=1.):
+        '''
+        Решение внутренней баллистики в режиме анализа(d - от dense output)
+        :param tstep:
+        :param tmax:
+        :return:
+        '''
+        ys, p_mean, p_sn, p_kn, lk_indexes = ca.count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
+        self.v0 = ys[0].max()
+        self.pmax = p_mean.max()
+
+        return ys, p_mean, p_sn, p_kn, lk_indexes
+
+    def solve_eb(self, tstep=1., tmax=1000.):
+        ts, ys = ca.count_eb(*self._eb_preprocessor(), tstep=tstep, tmax=tmax)
+
+        return ts, ys
 
 
 if __name__ == '__main__':
@@ -231,10 +249,10 @@ if __name__ == '__main__':
                       Zk=1.53, kappa1=0.239, lambd1=2.26, mu1=0., kappa2=0.835, lambd2=-0.943, mu2=0., gamma_f=3e-4,
                       gamma_Jk=0.0016)]
 
-    bal_prob = BallisticsProblem(
+    bal_prob = FastBallisticsSolver(
         artsys, powders, shell,
         shot_params=ShootingParameters(5., 1000.)
     )
 
-    bal_prob.dsolve_ib()
-    bal_prob.dsolve_eb()
+    bal_prob.solve_ib()
+    bal_prob.solve_eb()

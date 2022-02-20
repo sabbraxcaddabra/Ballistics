@@ -1,6 +1,5 @@
 import numpy as np
 from numba import njit
-from ErrorClasses import TooMuchTime
 
 @njit('float64(float64, float64)')
 def Cx(v, y):
@@ -97,7 +96,7 @@ def count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
 
     return ts, ys.T
 
-count_eb(550, 21.76, 0.12192, 1., np.deg2rad(5), 1e3)
+count_eb(550, 21.76, 0.12192, 1., np.deg2rad(5), 1e3, tstep=2) # Прекомпиляция
 
 
 
