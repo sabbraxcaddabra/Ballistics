@@ -9,7 +9,6 @@ __all__ = ["ArtSystem", "Powder", "LoadParams",
            "ShootingParameters", "Shell",
            "FastBallisticsSolver", "DenseBallisticsSolver"]
 
-
 @dataclass
 class ArtSystem:
     # Датакласс для данных об артиллерийской системе
