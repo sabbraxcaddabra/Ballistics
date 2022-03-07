@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit
-from calculations.ErrorClasses import *
+from ...ErrorClasses import TooMuchTime
 
 @njit('float64(float64, float64)')
 def Cx(v, y):

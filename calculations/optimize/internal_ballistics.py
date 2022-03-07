@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit
-from calculations.ErrorClasses import *
+from ...ErrorClasses import *
 
 @njit
 def P(y, igniter, lambda_khi, S, W0, qfi, omega_sum, psis, powders):
