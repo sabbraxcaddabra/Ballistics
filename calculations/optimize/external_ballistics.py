@@ -70,28 +70,37 @@ def count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
     :param tmax: Максимальное время полета
     :return:
     '''
-    y0 = np.array([0., 0., V0, theta])
+
+    ys = np.array([
+        [0., 0., V0, theta],
+        [0., 0., V0, theta]
+    ])
+
     t0 = 0.
     K = np.zeros((4, 4))
-    while y0[1] >= 0. and y0[0] < distance:
-        external_bal_rs(K[0], y0, q, d, i43)
-        external_bal_rs(K[1], y0+K[0]/2, q, d, i43)
-        external_bal_rs(K[2], y0+K[1]/2, q, d, i43)
-        external_bal_rs(K[3], y0+K[2], q, d, i43)
-        y0 += tstep*(K[0] + 2*K[1] + 2*K[2] + K[3])/6
+    while ys[1, 1] >= 0. and ys[1, 0] < distance:
+        external_bal_rs(K[0], ys[1], q, d, i43)
+        external_bal_rs(K[1], ys[1]+K[0]/2, q, d, i43)
+        external_bal_rs(K[2], ys[1]+K[1]/2, q, d, i43)
+        external_bal_rs(K[3], ys[1]+K[2], q, d, i43)
+
+        ys[0] = ys[1]
+
+        ys[1] += tstep*(K[0] + 2*K[1] + 2*K[2] + K[3])/6
+
         t0 += tstep
         if t0 > tmax:
             raise TooMuchTime()
 
-    tstep /= -2
-    external_bal_rs(K[0], y0, q, d, i43)
-    external_bal_rs(K[1], y0 + K[0] / 2, q, d, i43)
-    external_bal_rs(K[2], y0 + K[1] / 2, q, d, i43)
-    external_bal_rs(K[3], y0 + K[2], q, d, i43)
-    y0 += tstep * (K[0] + 2 * K[1] + 2 * K[2] + K[3]) / 6
+    if ys[1, 1] < 0:
+        ys[1] = ys[0] + (0. - ys[0, 1]) * ((ys[1]-ys[0])/(ys[1, 1]-ys[0, 1]))
 
-    y0[3] = np.rad2deg(y0[3])
+    if ys[1, 0] > distance:
+        ys[1] = ys[0] + (distance - ys[0, 0]) * ((ys[1]-ys[0])/(ys[1, 0]-ys[0, 0]))
 
-    return y0
 
-count_eb(550, 21.76, 0.12192, 1., np.deg2rad(5), 1e3)
+    ys[1, 3] = np.rad2deg(ys[1, 3])
+
+    return ys[1]
+
+count_eb(935, 0.389, 0.03, 1., np.deg2rad(5), 1e3)
