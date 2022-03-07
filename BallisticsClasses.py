@@ -39,7 +39,7 @@ class ArtSystem:
             'l_d': self.l_d,
             'l_k': self.l_k,
             'l0': self.l0,
-            'Kf': self.l0
+            'Kf': self.Kf
         }
         return self_dict
 
