@@ -2,11 +2,11 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from collections import namedtuple
 import numpy as np
-# from .calculations import analyze as ca
-# from .calculations import optimize as co
+from calculations import analyze as ca
+from calculations import optimize as co
 
-import calculations.analyze as ca
-import calculations.optimize as co
+# import calculations.analyze as ca
+# import calculations.optimize as co
 
 __all__ = ["ArtSystem", "Powder", "LoadParams",
            "ShootingParameters", "Shell",
