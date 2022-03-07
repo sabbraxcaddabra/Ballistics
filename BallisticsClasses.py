@@ -9,10 +9,6 @@ __all__ = ["ArtSystem", "Powder", "LoadParams",
            "ShootingParameters", "Shell",
            "FastBallisticsSolver", "DenseBallisticsSolver"]
 
-'''
-Пакет для решения задач внутренней и внешней баллистики
-'''
-
 
 @dataclass
 class ArtSystem:
