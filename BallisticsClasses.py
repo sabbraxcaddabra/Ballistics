@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from collections import namedtuple
 import numpy as np
+
 from .calculations import analyze as ca
 from .calculations import optimize as co
 

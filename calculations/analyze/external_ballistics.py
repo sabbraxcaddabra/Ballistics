@@ -92,11 +92,16 @@ def count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
         ts[-1] = ts[-1] + (0. - ys[-2, 1]) * ((ts[-1]-ts[-2])/(ys[-1, 1]-ys[-2, 1]))
         ys[-1] = ys[-2] + (0. - ys[-2, 1]) * ((ys[-1]-ys[-2])/(ys[-1, 1]-ys[-2, 1]))
 
+    if ys[-1, 0] > distance:
+        ts[-1] = ts[-1] + (distance - ys[-2, 0]) * ((ts[-1]-ts[-2])/(ys[-1, 0]-ys[-2, 0]))
+        ys[-1] = ys[-2] + (distance - ys[-2, 0]) * ((ys[-1]-ys[-2])/(ys[-1, 0]-ys[-2, 0]))
+
+
     ys[:, 3] = np.rad2deg(ys[:, 3])
 
     return ts, ys.T
 
-count_eb(550, 21.76, 0.12192, 1., np.deg2rad(5), 1e3) # Прекомпиляция
+count_eb(935, 0.389, 0.03, 1., np.deg2rad(5), 1e3) # Прекомпиляция
 
 
 
