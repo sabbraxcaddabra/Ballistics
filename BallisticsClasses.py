@@ -257,5 +257,5 @@ if __name__ == '__main__':
         shot_params=ShootingParameters(5., 1000.)
     )
 
-    bal_prob.solve_ib()
-    bal_prob.solve_eb()
+    print(bal_prob.solve_ib())
+    print(bal_prob.solve_eb())
