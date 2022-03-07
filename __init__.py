@@ -1,5 +1,4 @@
 from .BallisticsClasses import *
-from .ErrorClasses import *
 
 __all__ = [
     'ArtSystem',
