@@ -30,6 +30,18 @@ class ArtSystem:
     def __str__(self):
         return f"Арт.система {self.name}, калибр: {self.d * 1e3} мм"
 
+    def as_dict(self):
+        self_dict = {
+            'name': self.name,
+            'd': self.d,
+            'S': self.S,
+            'W0': self.W0,
+            'l_d': self.l_k,
+            'l0': self.l0,
+            'Kf': self.l0
+        }
+        return self_dict
+
 
 @dataclass
 class Shell:
@@ -39,6 +51,14 @@ class Shell:
     i43: float  # Коэф формы по закону 43 года
     alpha: float = 0.  # Коэффициент наполнения
 
+    def as_dict(self):
+        self_dict = {
+            'name': self.name,
+            'd': self.d,
+            'q': self.q,
+            'i43': self.i43
+        }
+        return self_dict
 
 @dataclass
 class Powder:
@@ -74,16 +94,45 @@ class Powder:
         data_list = list(map(float, string_list[1:]))
         return cls(string_list[0], 0.0, *data_list)
 
+    def as_dict(self):
+        self_dict = {
+            'name': self.name,
+            'omega': self.omega,
+            'rho': self.rho,
+            'f_powd': self.f_powd,
+            'Ti': self.Ti,
+            'Jk': self.Jk,
+            'alpha': self.alpha,
+            'teta': self.teta,
+            'Zk': self.Zk,
+            'kappa1': self.kappa1,
+            'lambd1': self.lambd1,
+            'mu1': self.mu1,
+            'kappa2': self.kappa2,
+            'lambd2': self.lambd2,
+            'mu2': self.mu2,
+            'gamma_f': self.gamma_f,
+            'gamma_Jk': self.gamma_Jk,
+        }
+        return self_dict
+
 
 class LoadParams:
     # Класс хранящий информацию о параметрах заряжания
-    def __init__(self, P0, T0=15., PV=None, ig_mass=None):
+    def __init__(self, P0, T0=15., PV=4e5, ig_mass=None):
         self.P0 = P0  # Давление форсирования
         self.T0 = T0  # Температура метательного заряда
-        if ig_mass:
-            self.ig_mass = ig_mass  # Масса воспламенителя
-        else:
-            self.PV = PV - 1e5  # Давление воспламенителя
+        self.ig_mass = ig_mass  # Масса воспламенителя
+        self.PV = PV - 1e5  # Давление воспламенителя
+
+    def as_dict(self):
+        self_dict = {
+            'P0': self.P0,
+            'T0': self.T0,
+            'ig_mass': self.ig_mass,
+            'PV': self.PV
+        }
+        return self_dict
 
 
 @dataclass
@@ -91,6 +140,13 @@ class ShootingParameters:
     theta_angle: float = 45.  # Угол стрельбы
     distance: float = 150e3  # Макс. дистанция стрельбы
 
+    def as_dict(self):
+        self_dict = {
+            'theta_angle': self.theta_angle,
+            'distance': self.distance
+        }
+
+        return self_dict
 
 class BallisticsProblem(ABC):
     v0 = 0.
@@ -133,7 +189,7 @@ class BallisticsProblem(ABC):
         self.shot_params = shot_params  # Параметры стральбы(внешняя баллистика)
 
     def _ib_preprocessor(self):
-        if not hasattr(self, 'igniter_mass'):
+        if not self.load_params.ig_mass:
             self.igniter_mass = self.load_params.PV * (
                         self.barl.W0 - sum(powd.omega / powd.rho for powd in self.charge)) / self.igniter_f
 
