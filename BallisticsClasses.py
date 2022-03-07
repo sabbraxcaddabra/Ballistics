@@ -36,7 +36,8 @@ class ArtSystem:
             'd': self.d,
             'S': self.S,
             'W0': self.W0,
-            'l_d': self.l_k,
+            'l_d': self.l_d,
+            'lk': self.l_k,
             'l0': self.l0,
             'Kf': self.l0
         }
