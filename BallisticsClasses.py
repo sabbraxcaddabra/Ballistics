@@ -191,10 +191,12 @@ class BallisticsProblem(ABC):
 
     def _ib_preprocessor(self):
         if not self.load_params.ig_mass:
-            self.igniter_mass = self.load_params.PV * (
+            igniter_mass = self.load_params.PV * (
                         self.barl.W0 - sum(powd.omega / powd.rho for powd in self.charge)) / self.igniter_f
+        else:
+            igniter_mass = self.load_params.ig_mass
 
-        fs = self.igniter_mass * self.igniter_f
+        fs = igniter_mass * self.igniter_f
         num = fs / self.igniter_Ti
         denum = num / self.igniter_teta
 
