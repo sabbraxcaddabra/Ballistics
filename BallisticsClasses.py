@@ -155,6 +155,7 @@ class BallisticsProblem(ABC):
     psi_sum = 0.
     eta_k = 0.
     Lmax = 0.
+    vend = 0.
 
     igniter_f = 240e3
     igniter_teta = 0.22
