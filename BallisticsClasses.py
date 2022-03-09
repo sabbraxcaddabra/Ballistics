@@ -293,11 +293,11 @@ class DenseBallisticsSolver(BallisticsProblem):
         :param tmax:
         :return:
         '''
-        ys, p_mean, p_sn, p_kn, lk_indexes = ca.count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
+        ts, ys, p_mean, p_sn, p_kn, lk_indexes = ca.count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
         self.v0 = ys[0].max()
         self.pmax = p_mean.max()
 
-        return ys, p_mean, p_sn, p_kn, lk_indexes
+        return ts, ys, p_mean, p_sn, p_kn, lk_indexes
 
     def solve_eb(self, tstep=1., tmax=1000.):
         ts, ys = ca.count_eb(*self._eb_preprocessor(), tstep=tstep, tmax=tmax)

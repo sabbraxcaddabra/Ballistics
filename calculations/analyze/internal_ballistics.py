@@ -115,4 +115,4 @@ def count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powders, t
 
     ys[2:] = psis
 
-    return ys, p_mean, p_sn, p_kn, lk_indexes
+    return ts, ys, p_mean, p_sn, p_kn, lk_indexes
