@@ -13,7 +13,6 @@ __all__ = ["ArtSystem", "Powder", "LoadParams",
            "ShootingParameters", "Shell",
            "FastBallisticsSolver", "DenseBallisticsSolver"]
 
-
 @dataclass
 class ArtSystem:
     # Датакласс для данных об артиллерийской системе
@@ -52,6 +51,12 @@ class Shell:
     q: float  # Масса снаряда
     i43: float  # Коэф формы по закону 43 года
     alpha: float = 0.  # Коэффициент наполнения
+
+    @classmethod
+    def from_data_string(cls, string: str):
+        string_list = string.strip().split(' ')
+        data_list = list(map(float, string_list[1:]))
+        return cls(string_list[0], *data_list)
 
     def as_dict(self):
         self_dict = {
