@@ -39,6 +39,7 @@ class ArtSystem:
             'd': self.d,
             'S': self.S,
             'W0': self.W0,
+            'l_d': self.l_d,
             'khi': self.khi,
             'Kf': self.Kf
         }
@@ -49,7 +50,7 @@ class Shell:
     name: str  # Индекс снаряда
     d: float  # Калибр
     q: float  # Масса снаряда
-    i43: float  # Коэф формы по закону 43 года
+    i43: float  # Коэф. формы по закону 43 года
     alpha: float = 0.  # Коэффициент наполнения
 
     @classmethod

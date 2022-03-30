@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
 
-from Ballistics.ErrorClasses import *
+from ballistics.error_classes import *
 
 def runge_kutta4(f, y0, t0, t_end, tau, args=tuple(), stopfunc=None):
 
