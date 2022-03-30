@@ -22,12 +22,17 @@ class ArtSystem:
     S: float  # Калибр орудия
     W0: float  # Объем зарядной каморы
     l_d: float  # Полный путь снаряда
-    l_k: float  # Длина зарядной каморы
-    l0: float  # Приведенная длина зарядной каморы
-    Kf: float  # Коэффициент слухоцкого
+    khi: float # Коэффициент уширения каморы
+    Kf: float  # Коэффициент Слухоцкого
 
     def __str__(self):
         return f"Арт.система {self.name}, калибр: {self.d * 1e3} мм"
+
+    @classmethod
+    def from_data_string(cls, string: str):
+        string_list = string.strip().split(' ')
+        data_list = list(map(float, string_list[1:]))
+        return cls(string_list[0], *data_list)
 
     def as_dict(self):
         self_dict = {
@@ -35,13 +40,10 @@ class ArtSystem:
             'd': self.d,
             'S': self.S,
             'W0': self.W0,
-            'l_d': self.l_d,
-            'l_k': self.l_k,
-            'l0': self.l0,
+            'khi': self.khi,
             'Kf': self.Kf
         }
         return self_dict
-
 
 @dataclass
 class Shell:
@@ -209,8 +211,8 @@ class BallisticsProblem(ABC):
             50e6 ** 0.25,
             self.barl.S,
             self.barl.W0,
-            self.barl.l_k,
-            self.barl.l0,
+            self.barl.W0/(self.barl.S*self.barl.khi),
+            self.barl.W0/self.barl.S,
             sum(powd.omega for powd in self.charge),
             self.barl.Kf * self.shell.q,
             self.barl.l_d
@@ -305,18 +307,20 @@ class DenseBallisticsSolver(BallisticsProblem):
 
 
 if __name__ == '__main__':
-    artsys = ArtSystem(name='2А42', d=.03, S=0.000735299, W0=0.125E-3, l_d=2.263, l_k=0.12,
-                       l0=0.125E-3 / 0.000735299, Kf=1.136)
+    import matplotlib.pyplot as plt
+    artsys = ArtSystem(name='2А42', d=.03, S=0.000735299, W0=0.125E-3, l_d=2.263, khi=1, Kf=1.136)
     shell = Shell('30ка', 0.03, 0.389, 1.)
 
     powders = [Powder(name='6/7', omega=0.12, rho=1.6e3, f_powd=988e3, Ti=2800., Jk=343.8e3, alpha=1.038e-3, teta=0.236,
                       Zk=1.53, kappa1=0.239, lambd1=2.26, mu1=0., kappa2=0.835, lambd2=-0.943, mu2=0., gamma_f=3e-4,
                       gamma_Jk=0.0016)]
 
-    bal_prob = FastBallisticsSolver(
+    bal_prob = DenseBallisticsSolver(
         artsys, powders, shell,
         shot_params=ShootingParameters(5., 1000.)
     )
 
-    print(bal_prob.solve_ib())
-    print(bal_prob.solve_eb())
+    ts, ys, p_mean, *_ = bal_prob.solve_ib()
+
+    plt.plot(ts, p_mean*1e-6)
+    plt.show()
