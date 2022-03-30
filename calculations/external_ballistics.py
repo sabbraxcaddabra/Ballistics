@@ -1,6 +1,8 @@
 import numpy as np
 from numba import njit
 
+from ..ErrorClasses import *
+
 @njit('float64(float64, float64)')
 def Cx(v, y):
     """
@@ -57,7 +59,7 @@ def external_bal_rs(dy, y, q, d, i43):
 
 
 @njit
-def count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
+def dense_count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
     '''
     Решение основной задачи внешней баллистики
     :param V0: Начальная скорость
@@ -101,7 +103,54 @@ def count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
 
     return ts, ys.T
 
-count_eb(935, 0.389, 0.03, 1., np.deg2rad(5), 1e3) # Прекомпиляция
+@njit
+def fast_count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
+    '''
+    Решение основной задачи внешней баллистики
+    :param V0: Начальная скорость
+    :param q: Масса снаряда
+    :param d: Калибр
+    :param i43: Коэф формы по закону 1943 года
+    :param theta: Угол стрельбы
+    :param distance: Максимальная дистанция
+    :param tstep: Шаг по времени
+    :param tmax: Максимальное время полета
+    :return:
+    '''
+
+    ys = np.array([
+        [0., 0., V0, theta],
+        [0., 0., V0, theta]
+    ])
+
+    t0 = 0.
+    K = np.zeros((4, 4))
+    while ys[1, 1] >= 0. and ys[1, 0] < distance:
+        external_bal_rs(K[0], ys[1], q, d, i43)
+        external_bal_rs(K[1], ys[1]+K[0]/2, q, d, i43)
+        external_bal_rs(K[2], ys[1]+K[1]/2, q, d, i43)
+        external_bal_rs(K[3], ys[1]+K[2], q, d, i43)
+
+        ys[0] = ys[1]
+
+        ys[1] += tstep*(K[0] + 2*K[1] + 2*K[2] + K[3])/6
+
+        t0 += tstep
+        if t0 > tmax:
+            raise TooMuchTime()
+
+    if ys[1, 1] < 0:
+        ys[1] = ys[0] + (0. - ys[0, 1]) * ((ys[1]-ys[0])/(ys[1, 1]-ys[0, 1]))
+
+    if ys[1, 0] > distance:
+        ys[1] = ys[0] + (distance - ys[0, 0]) * ((ys[1]-ys[0])/(ys[1, 0]-ys[0, 0]))
+
+
+    ys[1, 3] = np.rad2deg(ys[1, 3])
+
+    return ys[1]
+
+fast_count_eb(935, 0.389, 0.03, 1., np.deg2rad(5), 1e3) # Прекомпиляция
 
 
 

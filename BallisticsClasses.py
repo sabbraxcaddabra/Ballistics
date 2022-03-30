@@ -3,11 +3,10 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 import numpy as np
 
-from .calculations import analyze as ca
-from .calculations import optimize as co
+from .calculations import *
 
 
-# import calculations.analyze as ca
+# import calculations.external as ca
 # import calculations.optimize as co
 
 __all__ = ["ArtSystem", "Powder", "LoadParams",
@@ -257,7 +256,7 @@ class FastBallisticsSolver(BallisticsProblem):
     '''
 
     def solve_ib(self, tstep=1e-5, tmax=1.):
-        v0, p_mean_max, _, _, psi_sum, eta_k = co.count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
+        v0, p_mean_max, _, _, psi_sum, eta_k = fast_count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
 
         self.v0 = v0
         self.pmax = p_mean_max
@@ -273,7 +272,7 @@ class FastBallisticsSolver(BallisticsProblem):
         :param tmax:
         :return:
         '''
-        x_max, y_end, v_end, theta_end = co.count_eb(*self._eb_preprocessor(), tstep, tmax)
+        x_max, y_end, v_end, theta_end = fast_count_eb(*self._eb_preprocessor(), tstep, tmax)
         self.Lmax = x_max
         self.y_end = y_end
         self.v_end = v_end
@@ -293,14 +292,14 @@ class DenseBallisticsSolver(BallisticsProblem):
         :param tmax:
         :return:
         '''
-        ts, ys, p_mean, p_sn, p_kn, lk_indexes = ca.count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
+        ts, ys, p_mean, p_sn, p_kn, lk_indexes = dense_count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
         self.v0 = ys[0].max()
         self.pmax = p_mean.max()
 
         return ts, ys, p_mean, p_sn, p_kn, lk_indexes
 
     def solve_eb(self, tstep=1., tmax=1000.):
-        ts, ys = ca.count_eb(*self._eb_preprocessor(), tstep=tstep, tmax=tmax)
+        ts, ys = dense_count_eb(*self._eb_preprocessor(), tstep=tstep, tmax=tmax)
 
         return ts, ys
 

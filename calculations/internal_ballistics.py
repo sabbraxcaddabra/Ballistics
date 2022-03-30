@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
 
-from ...ErrorClasses import *
+from Ballistics.ErrorClasses import *
 
 def runge_kutta4(f, y0, t0, t_end, tau, args=tuple(), stopfunc=None):
 
@@ -24,7 +24,6 @@ def runge_kutta4(f, y0, t0, t_end, tau, args=tuple(), stopfunc=None):
             break
 
     return ts[:i+1], ys[:i+1].T
-
 
 @njit
 def P(y, igniter, lambda_khi, S, W0, qfi, omega_sum, psis, powders):
@@ -89,9 +88,10 @@ def int_bal_rs(dy, y, psis, P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, 
             dy[2+i] = ((k50*p_mean**0.75)/powder.Jk) * (y[2+i] < powder.Zk)
         else:
             dy[2+i] = (p_mean/powder.Jk) * (y[2+i] < powder.Zk)
+    return p_mean, p_sn, p_kn
 
 
-def count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powders, tmax = 1. , tstep = 1e-5):
+def dense_count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powders, tmax = 1. , tstep = 1e-5):
     n_powd = len(powders)
     y = np.zeros(2+n_powd)
     psis = np.zeros(n_powd)
@@ -116,3 +116,59 @@ def count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powders, t
     ys[2:] = psis
 
     return ts, ys, p_mean, p_sn, p_kn, lk_indexes
+
+@njit
+def fast_count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powders, tmax = 1., tstep = 1e-5):
+    """
+
+    :param P0: Давление форсирование
+    :param igniter: Воспламенитель(named tuple)
+    :param k50: Константа в законе горения
+    :param S: Приведенная площадь канала ствола
+    :param W0: Объем каморы
+    :param l_k: Длина зарядной каморы
+    :param l_ps: Приведенная длина свободного объема каморы
+    :param omega_sum: Суммарная масса пороха
+    :param qfi: Фиктивная масса снаряда
+    :param l_d: Полный путь снаряда
+    :param powders: Массив порохов(кортеж из named tuple)
+    :param tmax: Максимальное время выстрела
+    :param tstep: Шаг по времени
+    :return:
+    """
+    y = np.zeros(2+len(powders))
+    lk = 0. # Координата по стволу, соответсвующая полному сгоранию порохового заряда
+    t0 = 0. # Начальное время
+    p_mean_max = 1e5
+    p_sn_max = 1e5
+    p_kn_max = 1e5
+
+    K = np.zeros((4, len(y)))
+
+    psis = np.zeros(len(powders))
+
+    while y[1] <= l_d:
+
+        # Проверка условия сгорания всего заряда
+        if np.all(1.<= psis) and lk == 0.:
+            lk = y[1]
+
+        p_mean1, p_sn1, p_kn1 = int_bal_rs(K[0], y, psis, P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, powders)
+        p_mean2, p_sn2, p_kn2 = int_bal_rs(K[1], y + tstep * K[0] / 2, psis, P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, powders)
+        p_mean3, p_sn3, p_kn3 = int_bal_rs(K[2], y + tstep * K[1] / 2, psis, P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, powders)
+        p_mean4, p_sn4, p_kn4 = int_bal_rs(K[3], y + tstep * K[2], psis, P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, powders)
+        y += tstep*(K[0] + 2*K[1] + 2*K[2] + K[3])/6
+        t0 += tstep
+        p_mean_max = max(p_mean1, p_mean2, p_mean3, p_mean4, p_mean_max)
+        p_sn_max = max(p_sn1, p_sn2, p_sn3, p_sn4, p_sn_max)
+        p_kn_max = max(p_kn1, p_kn2, p_kn3, p_kn4, p_kn_max)
+
+        if t0 > tmax:
+            raise TooMuchTime()
+
+    psi_sum = 0
+    for i, powder in enumerate(powders):
+        y[2+i] = psi(y[2 + i], *powder[7:])
+        psi_sum += y[2+i]*powder.omega
+    psi_sum /= omega_sum
+    return y[0], p_mean_max, p_sn_max, p_kn_max, psi_sum, lk/l_d
