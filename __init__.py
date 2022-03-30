@@ -14,7 +14,7 @@ def precompile():
     )
     bal_prob.solve_ib(tstep=1e-4)
     bal_prob.solve_eb(tstep=2.)
-    print('ballistics package is precompiled successfully')
+    print('ballistics package is precompiled successfully!')
 
 precompile()
 
