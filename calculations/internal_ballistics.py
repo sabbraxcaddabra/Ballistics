@@ -111,7 +111,7 @@ def dense_count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powd
     for i in range(ys.T.shape[0]):
         p_mean[i], p_sn[i], p_kn[i] = P(ys.T[i], igniter, lambda_khi[i], S, W0, qfi, omega_sum, psis.T[i], powders)
 
-    lk_indexes = np.argmax(psis >= 1., axis=1)
+    lk_indexes = np.argmax(np.isclose(psis, 1.), axis=1)
 
     ys[2:] = psis
 
@@ -150,7 +150,7 @@ def fast_count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powde
     while y[1] <= l_d:
 
         # Проверка условия сгорания всего заряда
-        if np.all(1.<= psis) and lk == 0.:
+        if np.all(np.abs(psis - 1.) < 1e-4) and lk == 0.:
             lk = y[1]
 
         p_mean1, p_sn1, p_kn1 = int_bal_rs(K[0], y, psis, P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, powders)
