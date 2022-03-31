@@ -157,6 +157,9 @@ class ShootingParameters:
         return self_dict
 
 class BallisticsProblem(ABC):
+    ib_counter = 0
+    eb_counter = 0
+
     v0 = 0.
     pmax = 1e5
     psi_sum = 0.
@@ -264,6 +267,7 @@ class FastBallisticsSolver(BallisticsProblem):
     '''
 
     def solve_ib(self, tstep=1e-5, tmax=1.):
+        self.ib_counter += 1
         v0, p_mean_max, _, _, psi_sum, eta_k = fast_count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
 
         self.v0 = v0
@@ -280,6 +284,7 @@ class FastBallisticsSolver(BallisticsProblem):
         :param tmax:
         :return:
         '''
+        self.eb_counter += 1
         x_max, y_end, v_end, theta_end = fast_count_eb(*self._eb_preprocessor(), tstep, tmax)
         self.Lmax = x_max
         self.y_end = y_end
@@ -300,6 +305,7 @@ class DenseBallisticsSolver(BallisticsProblem):
         :param tmax:
         :return:
         '''
+        self.ib_counter += 1
         ts, ys, p_mean, p_sn, p_kn, lk_indexes = dense_count_ib(*self._ib_preprocessor(), tstep=tstep, tmax=tmax)
         self.v0 = ys[0].max()
         self.pmax = p_mean.max()
@@ -307,6 +313,7 @@ class DenseBallisticsSolver(BallisticsProblem):
         return ts, ys, p_mean, p_sn, p_kn, lk_indexes
 
     def solve_eb(self, tstep=1., tmax=1000.):
+        self.eb_counter += 1
         ts, ys = dense_count_eb(*self._eb_preprocessor(), tstep=tstep, tmax=tmax)
 
         return ts, ys
