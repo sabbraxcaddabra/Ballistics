@@ -150,8 +150,6 @@ def fast_count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
 
     return ys[1]
 
-fast_count_eb(935, 0.389, 0.03, 1., np.deg2rad(5), 1e3) # Прекомпиляция
-
 
 
 
