@@ -1,31 +1,24 @@
 import numpy as np
-from numba import njit
+from numba import jit_module
 
 from ballistics.error_classes import *
 
-def runge_kutta4(f, y0, t0, t_end, tau, args=tuple(), stopfunc=None):
+# TODO Попробовать все это скомпилировать ahead-of-time
 
-    if not stopfunc:
-        stopfunc = lambda t, y: t <= t_end
-
-    ts = np.arange(t0, t_end+tau, tau)
-    ys = np.zeros((len(ts), len(y0)))
+def runge_kutta4_stepper(f, y0, t0, t_end, tau, args=tuple()):
+    n = 0
     K = np.zeros((4, len(y0)))
-    ys[0] = y0
+    ys = y0.copy()
+    while t0 < t_end:
+        f(K[0], ys, *args)
+        f(K[1], ys + tau * K[0] / 2, *args)
+        f(K[2], ys + tau * K[1] / 2, *args)
+        f(K[3], ys + tau * K[2], *args)
+        ys += + tau*(K[0] + 2*K[1] + 2*K[2] + K[3])/6
+        t0 += tau
+        n += 1
+        yield n, t0, ys
 
-    for i in range(1, len(ys)):
-        f(K[0], ys[i-1], *args)
-        f(K[1], ys[i-1] + tau * K[0] / 2, *args)
-        f(K[2], ys[i-1] + tau * K[1] / 2, *args)
-        f(K[3], ys[i-1] + tau * K[2], *args)
-        ys[i] = ys[i-1] + tau*(K[0] + 2*K[1] + 2*K[2] + K[3])/6
-
-        if stopfunc(ts[i], ys[i]):
-            break
-
-    return ts[:i+1], ys[:i+1].T
-
-@njit
 def P(y, igniter, lambda_khi, S, W0, qfi, omega_sum, psis, powders):
     thet = theta(psis, igniter, powders)
     fs = igniter.fs
@@ -42,7 +35,6 @@ def P(y, igniter, lambda_khi, S, W0, qfi, omega_sum, psis, powders):
 
     return p_mean, p_sn, p_kn
 
-@njit
 def theta(psis, igniter, powders):
     num = igniter.num
     denum = igniter.denum
@@ -54,7 +46,6 @@ def theta(psis, igniter, powders):
     else:
         return 0.4
 
-@njit
 def psi(z, zk, kappa1, lambd1, mu1, kappa2, lambd2, mu2):
     if z < 1:
         return kappa1*z*(1 + lambd1*z + mu1*z**2)
@@ -65,7 +56,6 @@ def psi(z, zk, kappa1, lambd1, mu1, kappa2, lambd2, mu2):
     else:
         return 1
 
-@njit
 def int_bal_rs(dy, y, psis, P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, powders):
     """
     Функция правых частей системы уравнений внутреней баллистики при аргументе t
@@ -90,34 +80,44 @@ def int_bal_rs(dy, y, psis, P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, 
             dy[2+i] = (p_mean/powder.Jk) * (y[2+i] < powder.Zk)
     return p_mean, p_sn, p_kn
 
-
 def dense_count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powders, tmax = 1. , tstep = 1e-5):
     n_powd = len(powders)
     y = np.zeros(2+n_powd)
     psis = np.zeros(n_powd)
 
     args = (psis, P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, powders)
-    ts, ys = runge_kutta4(int_bal_rs, y, t0=0., t_end=tmax, tau=tstep, args=args, stopfunc=lambda t, y: y[1] >= l_d)
 
-    psis = np.zeros((len(powders), ys.shape[1]))
+    ts = np.arange(0, tmax+tstep, tstep)
+    ys = np.zeros((ts.shape[0], y.shape[0]))
+    psis_array = np.zeros((ys.shape[0], n_powd))
+    p_mean, p_sn, p_kn = np.zeros(ys.shape[0]), np.zeros(ys.shape[0]), np.zeros(ys.shape[0])
 
-    for i, powd in enumerate(powders):
-        psis[i, :] = np.array([psi(ys[2+i][k], *powd[7:]) for k in range(ys.shape[1])])
+    for n, ts_n, ys_n in runge_kutta4_stepper(int_bal_rs, y, 0., tmax, tstep, args):
+        if ys_n[1] > l_d:
+            ts = ts[:n]
+            ys = ys[:n].T
+            psis_array = psis_array[:n]
+            p_mean = p_mean[:n]
+            p_sn = p_sn[:n]
+            p_kn = p_kn[:n]
+            break
+        else:
+            ys[n] = ys_n
+            for i, powd in enumerate(powders):
+                psis_array[n, i] = psi(ys_n[2 + i], *powd[7:])
+            lambda_khi = (ys_n[1] + l_k) / (ys_n[1] + l_ps)
+            p_mean[n], p_sn[n], p_kn[n] = P(ys_n, igniter, lambda_khi, S, W0, qfi, omega_sum, psis_array[n], powders)
 
-    lambda_khi = (ys[1] + l_k)/(ys[1] + l_ps)
+    psis_array = psis_array.T
+    burned = np.abs(psis_array - 1.)
+    lk_indexes = burned.argmin(axis=1).astype('int32')
 
-    p_mean, p_sn, p_kn = np.zeros(ys.shape[1]), np.zeros(ys.shape[1]), np.zeros(ys.shape[1])
+    # lk_indexes = np.array([burned_a.argmin() for burned_a in burned])
 
-    for i in range(ys.T.shape[0]):
-        p_mean[i], p_sn[i], p_kn[i] = P(ys.T[i], igniter, lambda_khi[i], S, W0, qfi, omega_sum, psis.T[i], powders)
-
-    lk_indexes = np.argmax(np.isclose(psis, 1.), axis=1)
-
-    ys[2:] = psis
+    ys[2:] = psis_array
 
     return ts, ys, p_mean, p_sn, p_kn, lk_indexes
 
-@njit
 def fast_count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powders, tmax = 1., tstep = 1e-5):
     """
 
@@ -172,3 +172,5 @@ def fast_count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powde
         psi_sum += y[2+i]*powder.omega
     psi_sum /= omega_sum
     return y[0], p_mean_max, p_sn_max, p_kn_max, psi_sum, lk/l_d
+
+jit_module()
