@@ -398,7 +398,7 @@ class FastBallisticsSolver(BallisticsProblem):
             self.shot_params.distance, tstep, tmax
         )
 
-        self.Lmax = y0[2]
+        self.Lmax = y0[0]
 
         self.eb_counter += 1
 
