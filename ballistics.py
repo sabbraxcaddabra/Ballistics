@@ -9,7 +9,7 @@ from collections import namedtuple
 __all__ = [
     'TooMuchPowderError', 'TooMuchTimeError',
     'ArtSystem', 'Powder', 'Shell', 'LoadParams',
-    'ShootingParameters', 'BallisticsProblem'
+    'ShootingParameters', 'FastBallisticsSolver', 'DenseBallisticsSolver'
 ]
 
 class TooMuchPowderError(Exception):
