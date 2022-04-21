@@ -171,6 +171,9 @@ class BallisticsProblem(ABC):
     Lmax = 0.
     vend = 0.
 
+    ib_counter = 0
+    eb_counter = 0
+
     def __init__(self, barl, charge, shell, load_params=LoadParams(30e6, PV=4e5), shot_params=ShootingParameters()):
         self.barl = barl  # Орудие
         self.charge = charge  # Массив порохов(метательный заряд)
@@ -369,6 +372,8 @@ class FastBallisticsSolver(BallisticsProblem):
 
         self.bal_lib.count_ib(new_problem, n_powd, powd_array, tstep, tmax)
 
+        self.ib_counter += 1
+
         self.v0 = new_problem[0].v0
         self.pmax = new_problem[0].p_av_max
         self.psi_sum = new_problem[0].psi_sum
@@ -393,6 +398,10 @@ class FastBallisticsSolver(BallisticsProblem):
             self.shot_params.distance, tstep, tmax
         )
 
+        self.Lmax = y0[2]
+
+        self.eb_counter += 1
+
         return y0[0], y0[1], y0[2], y0[3]
 
 class DenseBallisticsSolver(BallisticsProblem):
@@ -411,6 +420,8 @@ class DenseBallisticsSolver(BallisticsProblem):
             y_array_ptr, self.shell.d, self.shell.q, self.shell.i43,
             self.shot_params.distance, tstep, tmax, n_tsteps
         )
+
+        self.eb_counter += 1
 
         ts = np.linspace(0., tstep*n_tsteps[0], n_tsteps[0])
         y_array = y_array[:, :n_tsteps[0]]
@@ -451,6 +462,8 @@ class DenseBallisticsSolver(BallisticsProblem):
                 powd.Zk, powd.kappa1, powd.lambd1, powd.mu1, powd.kappa2, powd.lambd2, powd.mu2,
                 powd.gamma_f, powd.gamma_Jk
             )
+
+        self.ib_counter += 1
 
         n_tsteps = self.ffi.new('int *')
         n_tsteps[0] = int(tmax/tstep)
