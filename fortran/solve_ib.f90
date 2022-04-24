@@ -306,6 +306,11 @@ module solve_ib
 
                 call compute_psi(y_array(3:2+n_powd, i-1), y_array(3:2+n_powd, i-1), charge)
 
+                if (t0 > tend) then
+                    ibp%status = 2
+                    return
+                end if
+
                 if (y_array(2, i) > barl%l_d) then
                     call int_bal_rs(dy(:, 1), y_array(:, i), psis, p(:, 1), p0, om_sum, ign, barl, charge, err_state)
                     y_array(3:2+n_powd, i) = psis
