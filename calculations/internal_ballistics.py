@@ -1,7 +1,7 @@
 import numpy as np
 from numba import jit_module
 
-from ballistics.error_classes import *
+from ..error_classes import *
 
 # TODO Попробовать все это скомпилировать ahead-of-time
 
@@ -164,7 +164,7 @@ def fast_count_ib(P0, igniter, k50, S, W0, l_k, l_ps, omega_sum, qfi, l_d, powde
         p_kn_max = max(p_kn1, p_kn2, p_kn3, p_kn4, p_kn_max)
 
         if t0 > tmax:
-            raise TooMuchTime()
+            raise TooMuchTimeError()
 
     psi_sum = 0
     for i, powder in enumerate(powders):
