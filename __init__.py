@@ -1,4 +1,5 @@
 from .ballistics_classes import *
+from .error_classes import *
 
 def precompile():
     artsys = ArtSystem(name='2А42', d=.03, S=0.000735299, W0=0.125E-3, l_d=1., khi=1, Kf=1.136)
@@ -25,5 +26,7 @@ __all__ = [
     'LoadParams',
     'ShootingParameters',
     'FastBallisticsSolver',
-    'DenseBallisticsSolver'
+    'DenseBallisticsSolver',
+    'TooMuchPowderError',
+    'TooMuchTime'
 ]
