@@ -1,9 +1,8 @@
 import numpy as np
-from numba import njit
+from numba import jit_module
 
 from ..error_classes import *
 
-@njit('float64(float64, float64)')
 def Cx(v, y):
     """
     Функция возвращающая коэффициент лобового сопротивления по значению
@@ -17,7 +16,7 @@ def Cx(v, y):
     a_list = np.array([340.29, 340.10, 339.91, 339.53, 339.14, 338.76, 338.38, 337.98, 337.6,
                        337.21, 336.82, 336.43, 320.54, 299.53, 295.07])
     a = np.interp(y, h_list, a_list)
-    mah = round(v / a, 4)
+    mah = v / a
     mah_list = np.array([0.4, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
                          1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7,
                          2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6])
@@ -26,21 +25,9 @@ def Cx(v, y):
                         0.292, 0.287, 0.283, 0.279, 0.277, 0.273, 0.270, 0.267, 0.265,
                         0.263, 0.263, 0.261, 0.260])
     koef = np.interp(mah, mah_list, cx_list)
-    return round(koef, 4)
+    return koef
 
 
-@njit('float64(float64)')
-def H(height):
-    """
-    Функция возращающая плостность воздуха на заданной высоте по формуле Ветчинкина
-    Реализована для стандартной арт. атмосферы с плотностью воздуха 1.2066
-    :param height: Значение высоты
-    """
-    plotnost = 1.2066 * ((20000 - height) / (20000 + height))
-    return plotnost
-
-
-@njit
 def external_bal_rs(dy, y, q, d, i43):
     """
     Фунция правых частей системы уравнений внешнй баллистики при аргументе t
@@ -53,12 +40,12 @@ def external_bal_rs(dy, y, q, d, i43):
     g = 9.81
     dy[0] = y[2] * np.cos(y[3])  # Расчет приращения координаты X
     dy[1] = y[2] * np.sin(y[3])  # Расчет приращения координаты Y
-    Jt = -0.5 * i43 * Cx(y[2], y[1]) * H(y[1]) * (y[2] ** 2)  # Расчет силы лобового сопротивления
+    Hy = 1.2066 * ((20000 - y[1]) / (20000 + y[1]))
+    Jt = -0.5 * i43 * Cx(y[2], y[1]) * Hy * (y[2] ** 2)  # Расчет силы лобового сопротивления
     dy[2] = ((Jt * ((np.pi * d ** 2) / 4)) - (q * g * np.sin(y[3]))) / q  # Расчет приращения скорости V
     dy[3] = -(g * np.cos(y[3])) / y[2]  # Расчет приращения угла teta
 
 
-@njit
 def dense_count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
     '''
     Решение основной задачи внешней баллистики
@@ -98,12 +85,10 @@ def dense_count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
         ts[-1] = ts[-1] + (distance - ys[-2, 0]) * ((ts[-1]-ts[-2])/(ys[-1, 0]-ys[-2, 0]))
         ys[-1] = ys[-2] + (distance - ys[-2, 0]) * ((ys[-1]-ys[-2])/(ys[-1, 0]-ys[-2, 0]))
 
-
     ys[:, 3] = np.rad2deg(ys[:, 3])
 
     return ts, ys.T
 
-@njit
 def fast_count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
     '''
     Решение основной задачи внешней баллистики
@@ -150,13 +135,6 @@ def fast_count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
 
     return ys[1]
 
-fast_count_eb(935, 0.389, 0.03, 1., np.deg2rad(5), 1e3) # Прекомпиляция
-
-
-
-
-
-
-
+jit_module()
 
 
