@@ -34,5 +34,5 @@ __all__ = [
     'FastBallisticsSolver',
     'DenseBallisticsSolver',
     'TooMuchPowderError',
-    'TooMuchTime'
+    'TooMuchTimeError'
 ]

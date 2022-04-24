@@ -122,7 +122,7 @@ def fast_count_eb(V0, q, d, i43, theta, distance, tstep=1., tmax=1000.):
 
         t0 += tstep
         if t0 > tmax:
-            raise TooMuchTime()
+            raise TooMuchTimeError()
 
     if ys[1, 1] < 0:
         ys[1] = ys[0] + (0. - ys[0, 1]) * ((ys[1]-ys[0])/(ys[1, 1]-ys[0, 1]))
