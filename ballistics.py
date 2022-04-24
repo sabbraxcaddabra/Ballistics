@@ -1,4 +1,5 @@
 import cffi
+import os
 import numpy as np
 
 from dataclasses import dataclass
@@ -11,6 +12,9 @@ __all__ = [
     'ArtSystem', 'Powder', 'Shell', 'LoadParams',
     'ShootingParameters', 'FastBallisticsSolver', 'DenseBallisticsSolver'
 ]
+
+HERE = os.path.dirname(__file__)
+DLL_FILE = os.path.abspath(os.path.join(HERE, ".", "fortran", "ballib.dll"))
 
 class TooMuchPowderError(Exception):
     def __str__(self):
@@ -323,7 +327,7 @@ class BallisticsProblem(ABC):
             '''
         )
 
-        bal_lib = ffi.dlopen('fortran/ballib.dll')
+        bal_lib = ffi.dlopen(DLL_FILE)
         return ffi, bal_lib
 
     @abstractmethod
