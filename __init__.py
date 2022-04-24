@@ -1,4 +1,4 @@
-from .ballistics_classes import *
+from .ballistics import *
 from .error_classes import *
 
 def precompile():
