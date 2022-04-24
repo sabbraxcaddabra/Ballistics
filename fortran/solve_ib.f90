@@ -210,7 +210,7 @@ module solve_ib
                 ibp%p_kn_max = max(ibp%p_kn_max, p(3))
                 call int_bal_rs(dy(:, 2), y + 0.5_dp*tstep*dy(:, 1), psis, p, p0, om_sum, ign, barl, charge, err_state)
                 call int_bal_rs(dy(:, 3), y + 0.5_dp*tstep*dy(:, 2), psis, p, p0, om_sum, ign, barl, charge, err_state)
-                call int_bal_rs(dy(:, 4), y + tstep*dy(:, 2), psis, p, p0, om_sum, ign, barl, charge, err_state)
+                call int_bal_rs(dy(:, 4), y + tstep*dy(:, 3), psis, p, p0, om_sum, ign, barl, charge, err_state)
 
                 if (err_state == 1) then
                     ibp%status = 1

@@ -496,6 +496,7 @@ class DenseBallisticsSolver(BallisticsProblem):
             raise TooMuchTimeError()
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
     artsys = ArtSystem(name='2А42', d=.03, S=0.000735299, W0=0.125E-3, l_d=2.263, khi=1.0, Kf=1.136)
     shell = Shell('30ка', 0.03, 0.389, 1.)
 
@@ -508,7 +509,9 @@ if __name__ == '__main__':
         artsys, powders, shell
     )
 
-    bal_prob.solve_ib(tstep=1e-7)
+    ts, ys, p, *_ = bal_prob.solve_ib()
+    plt.plot(ys[1], p)
+    plt.show()
     bal_prob.solve_eb()
 
 
